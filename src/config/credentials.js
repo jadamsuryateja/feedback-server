@@ -21,10 +21,16 @@ console.log('Admin credential setup:', {
   passwordLength: hashedAdminPassword.length
 });
 
-export const credentials = {
+// Add this temporary debug code at the top
+console.log('Current process.env:', {
+  ADMIN_USERNAME: process.env.ADMIN_USERNAME,
+  NODE_ENV: process.env.NODE_ENV
+});
+
+credentials = {
   admin: {
-    username: process.env.ADMIN_USERNAME || 'surya',
-    password: hashedAdminPassword,
+    username: process.env.ADMIN_USERNAME || 'surya', // Make sure this matches
+    password: hashPassword('demo799'), // Force rehash the new password
     role: 'admin'
   },
   coordinators: {
@@ -45,9 +51,15 @@ export const credentials = {
     'coord': { password: hashPassword('demo799'), role: 'coordinator' }
   },
   bsh: {
-    'bsh_coord': { password: hashPassword('bsh@2024'), role: 'bsh' }
+    'bsh_coord': { password: hashPassword('demo799'), role: 'bsh' } // Changed from bsh@2024 to demo799
   }
 };
+
+// Add this debug log
+console.log('Admin credentials configured:', {
+  username: credentials.admin.username,
+  passwordHash: credentials.admin.password.substring(0, 10) + '...',
+});
 
 // Log credentials setup (remove in production)
 console.log('Credentials initialized:', {

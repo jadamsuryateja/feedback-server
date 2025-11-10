@@ -103,6 +103,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-httpServer.listen(PORT, HOST, () => {
-  console.log(`Server is running on http://${HOST}:${PORT}`);
+const port = process.env.PORT || 4000;
+const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+httpServer.listen(port, host, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on http://${host}:${port}`);
 });

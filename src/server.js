@@ -26,16 +26,18 @@ const { PORT, HOST, CORS_ORIGIN } = process.env;
 // Configure Socket.IO with CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: CORS_ORIGIN,
-    methods: ["GET", "POST"],
+    origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
-  }
+  },
+  allowEIO3: true,
+  transports: ['websocket', 'polling']
 });
 
-// Configure CORS for Express
+// Configure Express CORS
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -43,7 +45,7 @@ app.use(cors({
 
 // Add preflight handling
 app.options('*', cors({
-  origin: CORS_ORIGIN,
+  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]

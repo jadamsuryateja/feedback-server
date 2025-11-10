@@ -43,6 +43,10 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// Add body parser middleware before routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Add preflight handling
 app.options('*', cors({
   origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
@@ -51,12 +55,40 @@ app.options('*', cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// Update CORS configuration
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  exposedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 // Connect to MongoDB
 connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/feedback', feedbackRoutes);
+
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    time: new Date().toISOString(),
+    env: process.env.NODE_ENV,
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });

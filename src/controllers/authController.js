@@ -6,13 +6,22 @@ export const login = async (req, res) => {
   try {
     const { username, password, role } = req.body;
 
+    console.log('Login attempt:', { username, role }); // Add logging
+
     if (!username || !password || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: {
+          username: !username ? 'Username is required' : null,
+          password: !password ? 'Password is required' : null,
+          role: !role ? 'Role is required' : null
+        }
+      });
     }
 
+    // Verify JWT_SECRET
     if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not defined in environment variables');
-      return res.status(500).json({ error: 'Server configuration error' });
+      throw new Error('JWT_SECRET is not configured');
     }
 
     let user = null;
@@ -62,8 +71,17 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Login error:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body
+    });
+    
+    return res.status(500).json({ 
+      error: 'Server error', 
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

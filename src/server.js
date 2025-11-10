@@ -104,7 +104,8 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
-const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+// Always bind to 0.0.0.0 to work in containers
+const host = '0.0.0.0';
 
 httpServer.listen(port, host, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on http://${host}:${port}`);

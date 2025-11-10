@@ -26,22 +26,31 @@ const { PORT, HOST, CORS_ORIGIN } = process.env;
 // Configure Socket.IO with CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: [CORS_ORIGIN],
+    origin: CORS_ORIGIN,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
   }
 });
-
-// Connect to MongoDB
-connectDB();
 
 // Configure CORS for Express
 app.use(cors({
   origin: CORS_ORIGIN,
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Add preflight handling
+app.options('*', cors({
+  origin: CORS_ORIGIN,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Connect to MongoDB
+connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/config', configRoutes);

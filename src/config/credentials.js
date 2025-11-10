@@ -1,15 +1,29 @@
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
 
-// Helper function to hash passwords with consistent salt rounds
-const hashPassword = (password) => bcrypt.hashSync(password, 10);
+dotenv.config();
 
-// Pre-hash the admin password if not already hashed
-const adminPassword = process.env.ADMIN_PASSWORD || hashPassword('admin123');
+const hashPassword = (password) => {
+  const salt = bcrypt.genSaltSync(10);
+  return bcrypt.hashSync(password, salt);
+};
+
+// Ensure admin password is properly hashed
+const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+const hashedAdminPassword = adminPassword.startsWith('$2a$') 
+  ? adminPassword 
+  : hashPassword(adminPassword);
+
+console.log('Admin credential setup:', {
+  username: process.env.ADMIN_USERNAME || 'admin',
+  passwordIsHashed: hashedAdminPassword.startsWith('$2a$'),
+  passwordLength: hashedAdminPassword.length
+});
 
 export const credentials = {
   admin: {
     username: process.env.ADMIN_USERNAME || 'admin',
-    password: adminPassword.startsWith('$2a$') ? adminPassword : hashPassword(adminPassword),
+    password: hashedAdminPassword,
     role: 'admin'
   },
   coordinators: {

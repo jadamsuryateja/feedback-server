@@ -6,33 +6,35 @@ export const login = async (req, res) => {
   try {
     const { username, password, role } = req.body;
 
-    console.log('Login attempt:', { 
-      username, 
+    // Add request validation logging
+    console.log('Login request:', {
+      username,
       role,
       hasPassword: !!password,
-      envSecret: !!process.env.JWT_SECRET,
-      adminUsername: credentials.admin.username,
-      adminPasswordHash: credentials.admin.password.substring(0, 10) + '...'
+      headers: req.headers,
+      body: req.body
     });
 
-    // Validation
+    // Validate input
     if (!username || !password || !role) {
-      console.log('Missing fields:', { username: !username, password: !password, role: !role });
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing required fields',
-        details: {
-          username: !username ? 'Username is required' : null,
-          password: !password ? 'Password is required' : null,
-          role: !role ? 'Role is required' : null
+        missing: {
+          username: !username,
+          password: !password,
+          role: !role
         }
       });
     }
 
-    // JWT Secret check
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET missing in environment variables');
-      return res.status(500).json({ error: 'Server configuration error' });
-    }
+    // Add credentials check logging
+    console.log('Checking credentials for:', {
+      role,
+      username,
+      adminUser: credentials.admin.username,
+      coordinatorExists: role === 'coordinator' && !!credentials.coordinators[username],
+      bshExists: role === 'bsh' && !!credentials.bsh[username]
+    });
 
     let user = null;
     let userRole = null;
@@ -45,7 +47,6 @@ export const login = async (req, res) => {
         storedPassword = credentials.admin.password;
         user = { username: credentials.admin.username };
         userRole = 'admin';
-        console.log('Admin login attempt');
       }
     } 
     // Coordinator login
@@ -56,7 +57,6 @@ export const login = async (req, res) => {
         user = { username };
         userRole = 'coordinator';
         branch = coordinator.branch;
-        console.log('Coordinator login attempt:', { branch });
       }
     } 
     // BSH login
@@ -66,48 +66,67 @@ export const login = async (req, res) => {
         storedPassword = bshUser.password;
         user = { username };
         userRole = 'bsh';
-        console.log('BSH login attempt');
       }
     }
 
-    // Check credentials
+    // Debug user resolution
+    console.log('User resolution:', {
+      found: !!user,
+      hasStoredPassword: !!storedPassword,
+      resolvedRole: userRole,
+      branch: branch || 'N/A'
+    });
+
     if (!user || !storedPassword) {
-      console.log('User not found or no stored password');
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        details: 'User not found or invalid role'
+      });
     }
 
-    // Verify password
-    const isValidPassword = bcrypt.compareSync(password, storedPassword);
-    console.log('Password verification:', { 
-      isValid: isValidPassword,
-      providedPasswordLength: password.length,
-      storedHashLength: storedPassword.length 
+    // Verify password with debug info
+    console.log('Password verification attempt:', {
+      hashedInputLength: password ? password.length : 0,
+      storedHashLength: storedPassword.length,
+      isHashedStoredPassword: storedPassword.startsWith('$2a$')
     });
+
+    const isValidPassword = await bcrypt.compare(password, storedPassword);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        details: 'Password verification failed'
+      });
     }
 
-    // Generate token
-    const tokenPayload = { 
-      username: user.username, 
-      role: userRole, 
-      branch 
-    };
-    
-    const token = jwt.sign(
-      tokenPayload,
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    // Verify JWT secret
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is missing');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        details: 'JWT secret is not configured'
+      });
+    }
 
-    console.log('Login successful:', { 
-      username: user.username, 
-      role: userRole, 
-      branch: branch || 'N/A' 
-    });
+    // Create token with error handling
+    let token;
+    try {
+      token = jwt.sign(
+        { username: user.username, role: userRole, branch },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+    } catch (jwtError) {
+      console.error('JWT signing error:', jwtError);
+      return res.status(500).json({
+        error: 'Token generation failed',
+        details: process.env.NODE_ENV === 'development' ? jwtError.message : undefined
+      });
+    }
 
-    res.json({
+    // Send success response
+    return res.status(200).json({
       token,
       user: {
         username: user.username,
@@ -115,20 +134,19 @@ export const login = async (req, res) => {
         branch
       }
     });
+
   } catch (error) {
+    // Enhanced error logging
     console.error('Login error:', {
+      name: error.name,
       message: error.message,
       stack: error.stack,
-      body: {
-        username: req.body.username,
-        role: req.body.role,
-        hasPassword: !!req.body.password
-      }
+      body: req.body
     });
-    
-    return res.status(500).json({ 
-      error: 'Server error', 
-      message: error.message,
+
+    return res.status(500).json({
+      error: 'Server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }

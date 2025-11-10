@@ -95,17 +95,23 @@ export const login = async (req, res) => {
 
     const isValidPassword = await bcrypt.compare(password, storedPassword);
     
-    console.log('Password verification result:', {
+    console.log('Password verification:', {
+      providedPasswordLength: password.length,
+      storedHashLength: storedPassword.length,
       isValid: isValidPassword,
-      passwordLength: password.length,
-      hashLength: storedPassword.length
+      role: userRole,
+      username
     });
 
     if (!isValidPassword) {
-      console.log('Password verification failed for user:', username);
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Invalid credentials',
-        details: 'Password verification failed'
+        details: 'Password verification failed',
+        debug: process.env.NODE_ENV === 'development' ? {
+          userFound: !!user,
+          roleMatched: role === userRole,
+          passwordLength: password.length
+        } : undefined
       });
     }
 

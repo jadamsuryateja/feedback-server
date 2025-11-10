@@ -23,10 +23,26 @@ const httpServer = createServer(app);
 // Get environment variables
 const { PORT, HOST, CORS_ORIGIN } = process.env;
 
+// Update the CORS configuration to handle multiple origins
+const allowedOrigins = [
+  'https://feedback-frontend-rdop.vercel.app',
+  'https://feedback-frontend-pied.vercel.app',
+  // Add any other domains you need
+];
+
 // Configure Socket.IO with CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -37,7 +53,32 @@ const io = new Server(httpServer, {
 
 // Configure Express CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Update preflight handling
+app.options('*', cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -46,23 +87,6 @@ app.use(cors({
 // Add body parser middleware before routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Add preflight handling
-app.options('*', cors({
-  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-// Update CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "https://feedback-frontend-rdop.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  exposedHeaders: ["Content-Type", "Authorization"]
-}));
 
 // Add error handling middleware
 app.use((err, req, res, next) => {

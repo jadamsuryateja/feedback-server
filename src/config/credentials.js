@@ -9,7 +9,6 @@ const hashPassword = (password) => {
 };
 
 // Ensure admin password is properly hashed
-// Default admin username/password changed per request
 const adminPassword = process.env.ADMIN_PASSWORD || 'demo799';
 const hashedAdminPassword = adminPassword.startsWith('$2a$')
   ? adminPassword
@@ -27,44 +26,41 @@ console.log('Current process.env:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-credentials = {
+export const credentials = {  // Add 'export' here
   admin: {
-    username: process.env.ADMIN_USERNAME || 'surya', // Make sure this matches
-    password: hashPassword('demo799'), // Force rehash the new password
+    username: process.env.ADMIN_USERNAME || 'surya',
+    password: hashPassword('demo799'),
     role: 'admin'
   },
   coordinators: {
-    // All coordinators now share the requested password 'demo799' (hashed at startup)
-    'cse_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CSE' },
-    'ece_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'ECE' },
-    'eee_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'EEE' },
-    'mech_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MECH' },
-    'civil_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CIVIL' },
-    'ai_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'AI' },
-    'aiml_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'AIML' },
-    'ds_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'DS' },
-    'cs_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CS' },
-    'it_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'IT' },
-    'mba_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MBA' },
-    'mca_coord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MCA' },
-    // Generic coordinator account (username: 'coord') as requested
+    'csecoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CSE' },
+    'ececoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'ECE' },
+    'eeecoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'EEE' },
+    'mechcoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MECH' },
+    'civilcoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CIVIL' },
+    'aicoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'AI' },
+    'aimlcoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'AIML' },
+    'dscoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'DS' },
+    'cscoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'CS' },
+    'itcoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'IT' },
+    'mbacoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MBA' },
+    'mcacoord': { password: hashPassword('demo799'), role: 'coordinator', branch: 'MCA' },
     'coord': { password: hashPassword('demo799'), role: 'coordinator' }
   },
   bsh: {
-    'bsh_coord': { password: hashPassword('demo799'), role: 'bsh' } // Changed from bsh@2024 to demo799
+    'bshcoord': { password: hashPassword('demo799'), role: 'bsh' }
   }
 };
 
-// Add this debug log
+// Debug logs
 console.log('Admin credentials configured:', {
   username: credentials.admin.username,
   passwordHash: credentials.admin.password.substring(0, 10) + '...',
 });
 
-// Log credentials setup (remove in production)
 console.log('Credentials initialized:', {
   adminUsername: credentials.admin.username,
   adminPasswordHash: credentials.admin.password.substring(0, 10) + '...',
   coordinatorCount: Object.keys(credentials.coordinators).length,
-  bshConfigured: !!credentials.bsh.bsh_coord
+  bshConfigured: !!credentials.bsh.bshcoord
 });

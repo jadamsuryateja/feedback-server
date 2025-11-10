@@ -1,12 +1,15 @@
 import bcrypt from 'bcryptjs';
 
-// Helper function to hash passwords
+// Helper function to hash passwords with consistent salt rounds
 const hashPassword = (password) => bcrypt.hashSync(password, 10);
+
+// Pre-hash the admin password if not already hashed
+const adminPassword = process.env.ADMIN_PASSWORD || hashPassword('admin123');
 
 export const credentials = {
   admin: {
     username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || hashPassword('admin123'),
+    password: adminPassword.startsWith('$2a$') ? adminPassword : hashPassword(adminPassword),
     role: 'admin'
   },
   coordinators: {
@@ -27,3 +30,11 @@ export const credentials = {
     'bsh_coord': { password: hashPassword('bsh@2024'), role: 'bsh' }
   }
 };
+
+// Log credentials setup (remove in production)
+console.log('Credentials initialized:', {
+  adminUsername: credentials.admin.username,
+  adminPasswordHash: credentials.admin.password.substring(0, 10) + '...',
+  coordinatorCount: Object.keys(credentials.coordinators).length,
+  bshConfigured: !!credentials.bsh.bsh_coord
+});

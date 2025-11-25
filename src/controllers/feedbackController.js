@@ -44,17 +44,16 @@ export const getFeedbackSummary = async (req, res) => {
 
     let query = {};
     
-    // Add filters based on query parameters
     if (academicYear) query.academicYear = academicYear;
     if (year) query.year = parseInt(year);
     if (semester) query.semester = parseInt(semester);
     if (branch) query.branch = branch;
-    if (section) query.section = section;
+    if (section) query.section = section.toUpperCase();
 
     const feedbacks = await FeedbackResponse.find(query);
 
+    // Calculate summary with section-wise comments
     const summary = {};
-    const allComments = [];
 
     feedbacks.forEach(feedback => {
       feedback.theoryFeedback.forEach(theory => {
@@ -76,7 +75,8 @@ export const getFeedbackSummary = async (req, res) => {
               Q8: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
               Q9: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
               Q10: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
-            }
+            },
+            comments: []  // Add comments array
           };
         }
 
@@ -108,7 +108,8 @@ export const getFeedbackSummary = async (req, res) => {
               Q8: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
               Q9: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
               Q10: { ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
-            }
+            },
+            comments: []  // Add comments array
           };
         }
 
@@ -121,11 +122,14 @@ export const getFeedbackSummary = async (req, res) => {
         });
       });
 
+      // Add section-wise comments to each summary item
       if (feedback.collegeComments || feedback.departmentComments) {
-        allComments.push({
-          collegeComments: feedback.collegeComments,
-          departmentComments: feedback.departmentComments,
-          submittedAt: feedback.submittedAt
+        Object.keys(summary).forEach(key => {
+          summary[key].comments.push({
+            collegeComments: feedback.collegeComments,
+            departmentComments: feedback.departmentComments,
+            submittedAt: feedback.submittedAt
+          });
         });
       }
     });
@@ -166,23 +170,16 @@ export const getFeedbackSummary = async (req, res) => {
         type: item.type,
         totalResponses: item.totalResponses,
         questionScores,
-        overallPercentage
+        overallPercentage,
+        comments: item.comments  // Return comments with summary
       };
     });
 
-    res.json({
-      summary: summaryArray,
-      comments: allComments,
-      filterInfo: {
-        academicYear: academicYear || 'All',
-        year: year || 'All',
-        semester: semester || 'All',
-        branch: branch || 'All',
-        section: section || 'All'
-      }
+    res.json({ 
+      summary: summaryArray
     });
   } catch (error) {
-    console.error('Get feedback summary error:', error);
+    console.error('Get summary error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
